@@ -183,7 +183,13 @@ public class Table implements Serializable
 
         List <Comparable []> rows = new ArrayList <> ();
 
-        //  T O   B E   I M P L E M E N T E D 
+        for (var tuple : tuples) {
+            var newTuple = new Comparable[attrs.length];
+            for (int i = 0; i < attrs.length; i++) {
+                newTuple[i] = tuple[Arrays.asList(attribute).indexOf(attrs[i])];
+            }
+            rows.add(newTuple);
+        }
 
         return new Table (name + count++, attrs, colDomain, newKey, rows);
     } // project
