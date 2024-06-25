@@ -375,18 +375,59 @@ public class Table implements Serializable
      * @return  a table with tuples satisfying the equality predicate
      */
     public Table join (String attributes1, String attributes2, Table table2)
-    {
-        out.println (STR."RA> \{name}.join (\{attributes1}, \{attributes2}, \{table2.name})");
+{
+    out.println (STR."RA> \{name}.join (\{attributes1}, \{attributes2}, \{table2.name})");
 
-        var t_attrs = attributes1.split (" ");
-        var u_attrs = attributes2.split (" ");
-        var rows    = new ArrayList <Comparable []> ();
+    var t_attrs = attributes1.split (" ");
+    var u_attrs = attributes2.split (" ");
+    var rows    = new ArrayList <Comparable []> ();
 
-        //  T O   B E   I M P L E M E N T E D 
+    // Get the column positions for join attributes in both tables
+    int[] t_cols = match(t_attrs);
+    int[] u_cols = table2.match(u_attrs);
 
-        return new Table (name + count++, concat (attribute, table2.attribute),
-                                          concat (domain, table2.domain), key, rows);
-    } // join
+    // Create new attribute array with disambiguated names
+    String[] newAttribute = disambiguateAttributes(this.attribute, table2.attribute);
+    
+    // Create new domain array
+    Class[] newDomain = concat(domain, table2.domain);
+
+    // Perform the equi-join using nested loop join algorithm
+    for (Comparable[] t_tuple : tuples) {
+        for (Comparable[] u_tuple : table2.tuples) {
+            if (equalityCheck(t_tuple, u_tuple, t_cols, u_cols)) {
+                rows.add(concat(t_tuple, u_tuple));
+            }
+        }
+    }
+
+    return new Table (name + count++, newAttribute, newDomain, key, rows);
+}
+
+private boolean equalityCheck(Comparable[] t_tuple, Comparable[] u_tuple, int[] t_cols, int[] u_cols) {
+    for (int i = 0; i < t_cols.length; i++) {
+        if (!t_tuple[t_cols[i]].equals(u_tuple[u_cols[i]])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+private String[] disambiguateAttributes(String[] attrs1, String[] attrs2) {
+    String[] result = new String[attrs1.length + attrs2.length];
+    System.arraycopy(attrs1, 0, result, 0, attrs1.length);
+    
+    for (int i = 0; i < attrs2.length; i++) {
+        String attr = attrs2[i];
+        if (Arrays.asList(attrs1).contains(attr)) {
+            result[attrs1.length + i] = attr + "2";
+        } else {
+            result[attrs1.length + i] = attr;
+        }
+    }
+    
+    return result;
+}
 
     /************************************************************************************
      * Join this table and table2 by performing a "theta-join".  Tuples from both tables
