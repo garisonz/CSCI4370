@@ -19,3 +19,11 @@ Gary Zagorski
 
 Effectiveness 
 •	2(Exceeds Expectations)
+
+Ben Taylor 
+Implementations
+•	Natural Join
+•	Select
+
+Effectiveness 
+•	2(Exceeds Expectations)
