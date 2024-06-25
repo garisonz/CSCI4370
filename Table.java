@@ -541,64 +541,59 @@ public class Table implements Serializable
 
         var rows = new ArrayList <Comparable []> ();
 
-        // Identify common attributes
-        List<String> commonAttributes = new ArrayList<>();
-        for (String attr1 : attribute) {
-            for (String attr2 : table2.attribute) {
-                if (attr1.equals(attr2)) {
-                    commonAttributes.add(attr1);
-                }
+        // Find common attributes
+        List<String> commonAttrs = new ArrayList<>();
+        for (String attr : attribute) {
+            if (table2.col(attr) != -1) {
+                commonAttrs.add(attr);
             }
         }
 
-        // Find indices of common attributes in both tables
-        int[] thisCommonIndices = commonAttributes.stream().mapToInt(attr -> Arrays.asList(attribute).indexOf(attr)).toArray();
-        int[] table2CommonIndices = commonAttributes.stream().mapToInt(attr -> Arrays.asList(table2.attribute).indexOf(attr)).toArray();
+        // Get the positions of the common attributes in both tables
+        String[] commonAttrArray = commonAttrs.toArray(new String[0]);
+        int[] pos1 = match(commonAttrArray);
+        int[] pos2 = table2.match(commonAttrArray);
 
-        for (Comparable[] row1 : tuples) {
-            for (Comparable[] row2 : table2.tuples) {
+        // Perform the join operation
+        for (var tup1 : this.tuples) {
+            for (var tup2 : table2.tuples) {
                 boolean match = true;
-                for (int i = 0; i < thisCommonIndices.length; i++) {
-                    if (!row1[thisCommonIndices[i]].equals(row2[table2CommonIndices[i]])) {
+                for (int i = 0; i < pos1.length; i++) {
+                    if (!tup1[pos1[i]].equals(tup2[pos2[i]])) {
                         match = false;
                         break;
                     }
                 }
-
                 if (match) {
-                    Comparable[] newRow = new Comparable[attribute.length + table2.attribute.length - commonAttributes.size()];
-                    int pos = 0;
-
-                    // Add attributes from the first table
-                    for (Comparable value : row1) {
-                        newRow[pos++] = value;
+                    // Combine the tuples, avoiding duplicate columns
+                    Comparable[] combinedTuple = new Comparable[this.attribute.length + table2.attribute.length - commonAttrs.size()];
+                    int index = 0;
+                    for (Comparable value : tup1) {
+                        combinedTuple[index++] = value;
                     }
-
-                    // Add attributes from the second table that are not common
-                    for (int i = 0; i < row2.length; i++) {
-                        if (!commonAttributes.contains(table2.attribute[i])) {
-                            newRow[pos++] = row2[i];
+                    for (int j = 0; j < table2.attribute.length; j++) {
+                        if (commonAttrs.contains(table2.attribute[j])) {
+                            continue;
                         }
+                        combinedTuple[index++] = tup2[j];
                     }
-
-                    rows.add(newRow);
+                    rows.add(combinedTuple);
                 }
             }
         }
 
-        // Concatenate attributes and domains, eliminating duplicates
-        List<String> newAttributesList = new ArrayList<>(Arrays.asList(attribute));
-        List<Class> newDomainsList = new ArrayList<>(Arrays.asList(domain));
-
+        // Create the combined attribute and domain arrays
+        List<String> combinedAttrs = new ArrayList<>(Arrays.asList(this.attribute));
+        List<Class> combinedDomain = new ArrayList<>(Arrays.asList(this.domain));
         for (int i = 0; i < table2.attribute.length; i++) {
-            if (!commonAttributes.contains(table2.attribute[i])) {
-                newAttributesList.add(table2.attribute[i]);
-                newDomainsList.add(table2.domain[i]);
+            if (!commonAttrs.contains(table2.attribute[i])) {
+                combinedAttrs.add(table2.attribute[i]);
+                combinedDomain.add(table2.domain[i]);
             }
         }
 
-        String[] newAttributes = newAttributesList.toArray(new String[0]);
-        Class[] newDomains = newDomainsList.toArray(new Class[0]);
+        String[] newAttributes = combinedAttrs.toArray(new String[0]);
+        Class[] newDomains = combinedDomain.toArray(new Class[0]);
 
         return new Table(name + count++, newAttributes, newDomains, key, rows);
     } // join
