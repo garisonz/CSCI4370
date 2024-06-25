@@ -378,37 +378,134 @@ public class Table implements Serializable
     {
         out.println (STR."RA> \{name}.join (\{attributes1}, \{attributes2}, \{table2.name})");
 
-        var t_attrs = attributes1.split (" ");
-        var u_attrs = attributes2.split (" ");
-        var rows    = new ArrayList <Comparable []> ();
+        var t_attrs = attributes1.split(" ");
+        var u_attrs = attributes2.split(" ");
+        var rows = new ArrayList<Comparable[]>();
 
-        //  T O   B E   I M P L E M E N T E D 
+        // Get the column positions for join attributes in both tables
+        int[] t_cols = match(t_attrs);
+        int[] u_cols = table2.match(u_attrs);
 
-        return new Table (name + count++, concat (attribute, table2.attribute),
-                                          concat (domain, table2.domain), key, rows);
+        // Create new attribute array with disambiguated names
+        String[] newAttribute = disambiguateAttributes(this.attribute, table2.attribute);
+
+        // Create new domain array
+        Class[] newDomain = concat(domain, table2.domain);
+
+        // Perform the equi-join using nested loop join algorithm
+        for (Comparable[] t_tuple : tuples) {
+            for (Comparable[] u_tuple : table2.tuples) {
+                if (equalityCheck(t_tuple, u_tuple, t_cols, u_cols)) {
+                    rows.add(concat(t_tuple, u_tuple));
+                }
+            }
+        }
+        return new Table(name + count++, newAttribute, newDomain, key, rows);
     } // join
 
-    /************************************************************************************
-     * Join this table and table2 by performing a "theta-join".  Tuples from both tables
-     * are compared attribute1 <op> attribute2.  Disambiguate attribute names by appending "2"
-     * to the end of any duplicate attribute name.  Implement using a Nested Loop Join algorithm.
+    private boolean equalityCheck(Comparable[] t_tuple, Comparable[] u_tuple, int[] t_cols, int[] u_cols) {
+        for (int i = 0; i < t_cols.length; i++) {
+            if (!t_tuple[t_cols[i]].equals(u_tuple[u_cols[i]])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String[] disambiguateAttributes(String[] attrs1, String[] attrs2) {
+        String[] result = new String[attrs1.length + attrs2.length];
+        System.arraycopy(attrs1, 0, result, 0, attrs1.length);
+
+        for (int i = 0; i < attrs2.length; i++) {
+            String attr = attrs2[i];
+            if (Arrays.asList(attrs1).contains(attr)) {
+                result[attrs1.length + i] = attr + "2";
+            } else {
+                result[attrs1.length + i] = attr;
+            }
+        }
+
+        return result;
+    }
+    /**
+     * **********************************************************************************
+     * Join this table and table2 by performing a "theta-join". Tuples from both
+     * tables are compared attribute1 <op> attribute2. Disambiguate attribute
+     * names by appending "2" to the end of any duplicate attribute name.
+     * Implement using a Nested Loop Join algorithm.
      *
      * #usage movie.join ("studioName == name", studio)
      *
-     * @param condition  the theta join condition
-     * @param table2     the rhs table in the join operation
-     * @return  a table with tuples satisfying the condition
+     * @param condition the theta join condition
+     * @param table2 the rhs table in the join operation
+     * @return a table with tuples satisfying the condition
      */
-    public Table join (String condition, Table table2)
-    {
-        out.println (STR."RA> \{name}.join (\{condition}, \{table2.name})");
+    public Table join(String condition, Table table2) {
+        out.println(STR."RA> \{name}.join (\{condition}, \{table2.name})");
 
-        var rows = new ArrayList <Comparable []> ();
+        var rows = new ArrayList<Comparable[]>();
 
-        //  T O   B E   I M P L E M E N T E D
+        // Parse the condition
+        String[] condParts = condition.split(" ");
+        String attribute1 = condParts[0];
+        String operator = condParts[1];
+        String attribute2 = condParts[2];
 
-        return new Table (name + count++, concat (attribute, table2.attribute),
-                                          concat (domain, table2.domain), key, rows);
+        // Find the indices of the attributes in the respective tables
+        int index1 = Arrays.asList(attribute).indexOf(attribute1);
+        int index2 = Arrays.asList(table2.attribute).indexOf(attribute2);
+
+        for (Comparable[] row1 : tuples) {
+            for (Comparable[] row2 : table2.tuples) {
+                // Compare the attributes based on the operator
+                boolean match = false;
+                int comp = row1[index1].compareTo(row2[index2]);
+
+                switch (operator) {
+                    case "==":
+                        match = comp == 0;
+                        break;
+                    case "!=":
+                        match = comp != 0;
+                        break;
+                    case "<":
+                        match = comp < 0;
+                        break;
+                    case "<=":
+                        match = comp <= 0;
+                        break;
+                    case ">":
+                        match = comp > 0;
+                        break;
+                    case ">=":
+                        match = comp >= 0;
+                        break;
+                }
+
+                if (match) {
+                    // Create a new tuple for the joined table
+                    Comparable[] newRow = new Comparable[attribute.length + table2.attribute.length];
+                    System.arraycopy(row1, 0, newRow, 0, row1.length);
+                    System.arraycopy(row2, 0, newRow, row1.length, row2.length);
+                    rows.add(newRow);
+                }
+            }
+        }
+
+        // Concatenate attributes and domains
+        String[] newAttributes = concat(attribute, table2.attribute);
+        Class[] newDomains = concat(domain, table2.domain);
+
+        // Disambiguate attribute names
+        for (int i = 0; i < attribute.length; i++) {
+            for (int j = 0; j < table2.attribute.length; j++) {
+                if (attribute[i].equals(table2.attribute[j])) {
+                    newAttributes[j + attribute.length] += "2";
+                }
+            }
+        }
+
+        return new Table(name + count++, newAttributes, newDomains, key, rows);
     } // join
 
     /************************************************************************************
