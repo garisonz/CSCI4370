@@ -541,11 +541,66 @@ public class Table implements Serializable
 
         var rows = new ArrayList <Comparable []> ();
 
-        //  T O   B E   I M P L E M E N T E D 
+        // Identify common attributes
+        List<String> commonAttributes = new ArrayList<>();
+        for (String attr1 : attribute) {
+            for (String attr2 : table2.attribute) {
+                if (attr1.equals(attr2)) {
+                    commonAttributes.add(attr1);
+                }
+            }
+        }
 
-        // FIX - eliminate duplicate columns
-        return new Table (name + count++, concat (attribute, table2.attribute),
-                                          concat (domain, table2.domain), key, rows);
+        // Find indices of common attributes in both tables
+        int[] thisCommonIndices = commonAttributes.stream().mapToInt(attr -> Arrays.asList(attribute).indexOf(attr)).toArray();
+        int[] table2CommonIndices = commonAttributes.stream().mapToInt(attr -> Arrays.asList(table2.attribute).indexOf(attr)).toArray();
+
+        for (Comparable[] row1 : tuples) {
+            for (Comparable[] row2 : table2.tuples) {
+                boolean match = true;
+                for (int i = 0; i < thisCommonIndices.length; i++) {
+                    if (!row1[thisCommonIndices[i]].equals(row2[table2CommonIndices[i]])) {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match) {
+                    Comparable[] newRow = new Comparable[attribute.length + table2.attribute.length - commonAttributes.size()];
+                    int pos = 0;
+
+                    // Add attributes from the first table
+                    for (Comparable value : row1) {
+                        newRow[pos++] = value;
+                    }
+
+                    // Add attributes from the second table that are not common
+                    for (int i = 0; i < row2.length; i++) {
+                        if (!commonAttributes.contains(table2.attribute[i])) {
+                            newRow[pos++] = row2[i];
+                        }
+                    }
+
+                    rows.add(newRow);
+                }
+            }
+        }
+
+        // Concatenate attributes and domains, eliminating duplicates
+        List<String> newAttributesList = new ArrayList<>(Arrays.asList(attribute));
+        List<Class> newDomainsList = new ArrayList<>(Arrays.asList(domain));
+
+        for (int i = 0; i < table2.attribute.length; i++) {
+            if (!commonAttributes.contains(table2.attribute[i])) {
+                newAttributesList.add(table2.attribute[i]);
+                newDomainsList.add(table2.domain[i]);
+            }
+        }
+
+        String[] newAttributes = newAttributesList.toArray(new String[0]);
+        Class[] newDomains = newDomainsList.toArray(new Class[0]);
+
+        return new Table(name + count++, newAttributes, newDomains, key, rows);
     } // join
 
     /************************************************************************************
