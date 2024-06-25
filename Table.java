@@ -14,6 +14,7 @@ import java.util.function.*;
 import java.util.stream.*;
 
 import static java.lang.Boolean.*;
+import static java.lang.StringTemplate.STR;
 import static java.lang.System.arraycopy;
 import static java.lang.System.out;
 
@@ -307,8 +308,22 @@ public class Table implements Serializable
         if (! compatible (table2)) return null;
 
         List <Comparable []> rows = new ArrayList <> ();
+        // Add all tuples from this table
+    rows.addAll(tuples);
 
-        //  T O   B E   I M P L E M E N T E D 
+    // Add tuples from table2 that are not in this table
+    for (Comparable[] tuple : table2.tuples) {
+        boolean isDuplicate = false;
+        for (Comparable[] existingTuple : rows) {
+            if (Arrays.equals(tuple, existingTuple)) {
+                isDuplicate = true;
+                break;
+            }
+        }
+        if (!isDuplicate) {
+            rows.add(tuple);
+        }
+    }
 
         return new Table (name + count++, attribute, domain, key, rows);
     } // union
@@ -328,8 +343,20 @@ public class Table implements Serializable
         if (! compatible (table2)) return null;
 
         List <Comparable []> rows = new ArrayList <> ();
-
-        //  T O   B E   I M P L E M E N T E D 
+        
+        // Add tuples from this table that are not in table2
+    for (Comparable[] tuple : tuples) {
+        boolean isInTable2 = false;
+        for (Comparable[] tuple2 : table2.tuples) {
+            if (Arrays.equals(tuple, tuple2)) {
+                isInTable2 = true;
+                break;
+            }
+        }
+        if (!isInTable2) {
+            rows.add(tuple);
+        }
+    }
 
         return new Table (name + count++, attribute, domain, key, rows);
     } // minus
