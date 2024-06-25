@@ -309,21 +309,21 @@ public class Table implements Serializable
 
         List <Comparable []> rows = new ArrayList <> ();
         // Add all tuples from this table
-    rows.addAll(tuples);
+        rows.addAll(tuples);
 
-    // Add tuples from table2 that are not in this table
-    for (Comparable[] tuple : table2.tuples) {
-        boolean isDuplicate = false;
-        for (Comparable[] existingTuple : rows) {
-            if (Arrays.equals(tuple, existingTuple)) {
-                isDuplicate = true;
-                break;
+        // Add tuples from table2 that are not in this table
+        for (Comparable[] tuple : table2.tuples) {
+            boolean isDuplicate = false;
+            for (Comparable[] existingTuple : rows) {
+                if (Arrays.equals(tuple, existingTuple)) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            if (!isDuplicate) {
+                rows.add(tuple);
             }
         }
-        if (!isDuplicate) {
-            rows.add(tuple);
-        }
-    }
 
         return new Table (name + count++, attribute, domain, key, rows);
     } // union
@@ -345,18 +345,18 @@ public class Table implements Serializable
         List <Comparable []> rows = new ArrayList <> ();
         
         // Add tuples from this table that are not in table2
-    for (Comparable[] tuple : tuples) {
-        boolean isInTable2 = false;
-        for (Comparable[] tuple2 : table2.tuples) {
-            if (Arrays.equals(tuple, tuple2)) {
-                isInTable2 = true;
-                break;
+        for (Comparable[] tuple : tuples) {
+            boolean isInTable2 = false;
+            for (Comparable[] tuple2 : table2.tuples) {
+                if (Arrays.equals(tuple, tuple2)) {
+                    isInTable2 = true;
+                    break;
+                }
+            }
+            if (!isInTable2) {
+                rows.add(tuple);
             }
         }
-        if (!isInTable2) {
-            rows.add(tuple);
-        }
-    }
 
         return new Table (name + count++, attribute, domain, key, rows);
     } // minus
