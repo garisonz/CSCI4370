@@ -1,5 +1,15 @@
 # CSCI4370_Project1
-Relational Algebra Database Project
+
+To compile: 
+
+javac --enable-preview --release 22 *.java
+
+To run: 
+
+java --enable-preview MovieDB
+
+For the Relational Algebra project we implemented the five operators
+(Select, Project, Union, Minus, and Join) using the starter code.
 
 Austin Brock
 Implementations
@@ -10,7 +20,7 @@ Implementations
 Effectiveness
 •	2(Exceeds Expectations)
 
-Gary Zagorski
+Garison Zagorski
 •	Project 
 •	Natural Join
 •	Select
