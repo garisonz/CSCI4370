@@ -6,10 +6,9 @@ Implementations
 •	Union 
 •	Minus
 •	Equi Join
-•	Natural Join
 
 Effectiveness
-•	4(Exceeds Expectations)
+•	2(Exceeds Expectations)
 
 Gary Zagorski
 •	Project 
@@ -18,7 +17,7 @@ Gary Zagorski
 •	Store Sub directory
 
 Effectiveness 
-•	2(Exceeds Expectations)
+•	4(Exceeds Expectations)
 
 Ben Taylor 
 Implementations
@@ -26,4 +25,4 @@ Implementations
 •	Select
 
 Effectiveness 
-•	2(Exceeds Expectations)
+•	4(Exceeds Expectations)
