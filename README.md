@@ -13,7 +13,7 @@ Effectiveness
 
 Gary Zagorski
 •	Project 
-•	Theta Join
+•	Natural Join
 •	Select
 •	Store Sub directory
 
@@ -22,7 +22,7 @@ Effectiveness
 
 Ben Taylor 
 Implementations
-•	Natural Join
+•	Theta Join
 •	Select
 
 Effectiveness 
