@@ -151,10 +151,16 @@ public class LinHashMap <K, V>
      */
     public Set <Map.Entry <K, V>> entrySet ()
     {
-        var enSet = new HashSet <Map.Entry <K, V>> ();
+        var enSet = new HashSet<Map.Entry<K, V>>();
 
-        //  T O   B E   I M P L E M E N T E D
-            
+        for (var bucket : hTable) {
+            for (var b = bucket; b != null; b = b.next) {
+                for (int i = 0; i < b.keys; i++) {
+                    enSet.add(new AbstractMap.SimpleEntry<>(b.key[i], b.value[i]));
+                }
+            }
+        }
+
         return enSet;
     } // entrySet
 
@@ -247,7 +253,55 @@ public class LinHashMap <K, V>
     {
         out.println ("split: bucket chain " + isplit);
 
-        //  T O   B E   I M P L E M E N T E D
+        // Add a new bucket at the end of the hash table
+        hTable.add(new Bucket());
+
+        // Redistribute keys in the bucket chain starting at 'isplit'
+        var oldBucket = hTable.get(isplit);
+        var newBucketIndex = hTable.size() - 1;
+
+        List<Bucket> newBuckets = new ArrayList<>();
+        Bucket current = oldBucket;
+
+        while (current != null) {
+            Bucket next = current.next;
+            for (int j = 0; j < current.keys; j++) {
+                K key = current.key[j];
+                V value = current.value[j];
+                int newBucketPos = h2(key);
+
+                if (newBucketPos == isplit) {
+                    // Retain in the current bucket
+                    newBuckets.add(current);
+                } else {
+                    // Move to the new bucket
+                    hTable.get(newBucketIndex).add(key, value);
+                    current.key[j] = null;
+                    current.value[j] = null;
+                    current.keys--;
+                    j--; // Since we removed an element, stay at the same index
+                }
+            }
+            current = next;
+        }
+
+        // Update the chain of old bucket
+        for (int i = 0; i < newBuckets.size() - 1; i++) {
+            newBuckets.get(i).next = newBuckets.get(i + 1);
+        }
+        if (newBuckets.size() > 0) {
+            newBuckets.get(newBuckets.size() - 1).next = null;
+        } else {
+            hTable.set(isplit, new Bucket());
+        }
+
+        // Increment the split index
+        isplit++;
+        if (isplit == mod1) {
+            isplit = 0;
+            mod1 = mod2;
+            mod2 = 2 * mod1;
+        }
 
     } // split
 

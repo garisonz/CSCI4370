@@ -84,6 +84,8 @@ public class Table implements Serializable {
      * The map type to be used for indices. Change as needed.
      */
     private static final MapType mType = MapType.LINHASH_MAP;
+    private LinHashMap<KeyType, Comparable[]> uniqueIndex;
+    private LinHashMultiMap<KeyType, Comparable[]> nonUniqueIndex;
 
     /**
      * **********************************************************************************
@@ -98,11 +100,68 @@ public class Table implements Serializable {
             case HASH_MAP ->
                 new HashMap<>();
             case LINHASH_MAP -> new LinHashMap <> (KeyType.class, Comparable [].class);
+            case LINHASH_MAP -> new LinHashMultiMap <> (KeyType.class, Set.class);
             //case BPTREE_MAP  -> new BpTreeMap <> (KeyType.class, Comparable [].class);
             default ->
                 null;
         }; // switch
     } // makeMap
+
+    public void createIndex() {
+        out.println("Creating unique index on table " + name);
+        if (uniqueIndex == null) {
+            uniqueIndex = new LinHashMap<>(KeyType.class, Comparable[].class);
+            for (Comparable[] tuple : tuples) {
+                var keyVal = new Comparable[key.length];
+                var cols = match(key);
+                for (var j = 0; j < keyVal.length; j++) {
+                    keyVal[j] = tuple[cols[j]];
+                }
+                KeyType keyType = new KeyType(keyVal);
+                uniqueIndex.put(keyType, tuple);
+            }
+        } else {
+            out.println("Unique index already exists.");
+        }
+    }
+
+    public void createMindex() {
+        out.println("Creating non-unique index on table " + name);
+        if (nonUniqueIndex == null) {
+            nonUniqueIndex = new LinHashMultiMap<>(KeyType.class, Set.class);
+            for (Comparable[] tuple : tuples) {
+                var keyVal = new Comparable[key.length];
+                var cols = match(key);
+                for (var j = 0; j < keyVal.length; j++) {
+                    keyVal[j] = tuple[cols[j]];
+                }
+                KeyType keyType = new KeyType(keyVal);
+                nonUniqueIndex.putSingle(keyType, tuple);
+            }
+        } else {
+            out.println("Non-unique index already exists.");
+        }
+    }
+
+    public void dropIndex() {
+        out.println("Dropping unique index on table " + name);
+        if (uniqueIndex != null) {
+            uniqueIndex.clear();
+            uniqueIndex = null;
+        } else {
+            out.println("Unique index does not exist.");
+        }
+    }
+
+    public void dropMindex() {
+        out.println("Dropping non-unique index on table " + name);
+        if (nonUniqueIndex != null) {
+            nonUniqueIndex.clear();
+            nonUniqueIndex = null;
+        } else {
+            out.println("Non-unique index does not exist.");
+        }
+    }
 
     /**
      * **********************************************************************************
