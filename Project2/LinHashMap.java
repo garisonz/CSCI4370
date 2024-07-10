@@ -149,12 +149,16 @@ public class LinHashMap <K, V>
      * Return a set containing all the entries as pairs of keys and values.
      * @return  the set view of the map
      */
+    @Override
     public Set <Map.Entry <K, V>> entrySet ()
     {
         var enSet = new HashSet<Map.Entry<K, V>>();
 
+        // Traverse all the buckets in the hash table
         for (var bucket : hTable) {
+            // Traverse the linked list of buckets
             for (var b = bucket; b != null; b = b.next) {
+                // Collect all key-value pairs from the current bucket
                 for (int i = 0; i < b.keys; i++) {
                     enSet.add(new AbstractMap.SimpleEntry<>(b.key[i], b.value[i]));
                 }
@@ -184,6 +188,7 @@ public class LinHashMap <K, V>
      * @return  the value associated with the key
      */
     @SuppressWarnings("unchecked")
+    @Override
     public V get (Object key)
     {
         var i = h (key);
@@ -219,6 +224,7 @@ public class LinHashMap <K, V>
      * @param value  the value to insert
      * @return  the old/previous value, null if none
      */
+    @Override
     public V put (K key, V value)
     {
         var i    = h (key);                                                  // hash to i-th bucket chain
@@ -251,58 +257,55 @@ public class LinHashMap <K, V>
      */
     private void split ()
     {
-        out.println ("split: bucket chain " + isplit);
+        out.println("split: bucket chain " + isplit);
+
+        // Save the current split index
+        int splitIndex = isplit;
 
         // Add a new bucket at the end of the hash table
         hTable.add(new Bucket());
 
-        // Redistribute keys in the bucket chain starting at 'isplit'
-        var oldBucket = hTable.get(isplit);
-        var newBucketIndex = hTable.size() - 1;
-
-        List<Bucket> newBuckets = new ArrayList<>();
-        Bucket current = oldBucket;
-
-        while (current != null) {
-            Bucket next = current.next;
-            for (int j = 0; j < current.keys; j++) {
-                K key = current.key[j];
-                V value = current.value[j];
-                int newBucketPos = h2(key);
-
-                if (newBucketPos == isplit) {
-                    // Retain in the current bucket
-                    newBuckets.add(current);
-                } else {
-                    // Move to the new bucket
-                    hTable.get(newBucketIndex).add(key, value);
-                    current.key[j] = null;
-                    current.value[j] = null;
-                    current.keys--;
-                    j--; // Since we removed an element, stay at the same index
-                }
+        // Collect all keys and values from the split bucket
+        Map<K, V> splitBucketKeys = new HashMap<>();
+        Bucket b = hTable.get(splitIndex);
+        while (b != null) {
+            for (int i = 0; i < b.keys; i++) {
+                splitBucketKeys.put(b.key[i], b.value[i]);
             }
-            current = next;
+            b = b.next;
         }
 
-        // Update the chain of old bucket
-        for (int i = 0; i < newBuckets.size() - 1; i++) {
-            newBuckets.get(i).next = newBuckets.get(i + 1);
-        }
-        if (newBuckets.size() > 0) {
-            newBuckets.get(newBuckets.size() - 1).next = null;
-        } else {
-            hTable.set(isplit, new Bucket());
+        // Clear the original split bucket
+        hTable.set(splitIndex, new Bucket());
+
+        // Redistribute the collected keys and values
+        for (Map.Entry<K, V> entry : splitBucketKeys.entrySet()) {
+            K k = entry.getKey();
+            V v = entry.getValue();
+            int newIdx = h2(k);
+
+            // Ensure the newIdx points to the correct bucket
+            if (newIdx < isplit) {
+                newIdx = h(k); // Remap the key to its correct bucket
+            }
+
+            Bucket targetBucket = hTable.get(newIdx);
+            while (targetBucket.keys >= SLOTS) {
+                if (targetBucket.next == null) {
+                    targetBucket.next = new Bucket();
+                }
+                targetBucket = targetBucket.next;
+            }
+            targetBucket.add(k, v);
         }
 
-        // Increment the split index
+        // Update split and mod values
         isplit++;
         if (isplit == mod1) {
-            isplit = 0;
-            mod1 = mod2;
-            mod2 = 2 * mod1;
+            mod1 = mod2;        // Move to the next phase
+            mod2 = 2 * mod1;    // Double the range of hash values
+            isplit = 0;         // Reset the split index
         }
-
     } // split
 
 //-----------------------------------------------------------------------------------
@@ -352,7 +355,7 @@ public class LinHashMap <K, V>
         } else {
             for (var i = 1; i <= totalKeys; i += 2) ht.put (i, i * i);
         } // if
-
+        System.out.print(ht.entrySet());
         ht.printT ();
         for (var i = 0; i <= totalKeys; i++) {
             out.println (STR."key = \{i}, value = \{ht.get (i)}");

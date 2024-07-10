@@ -100,7 +100,6 @@ public class Table implements Serializable {
             case HASH_MAP ->
                 new HashMap<>();
             case LINHASH_MAP -> new LinHashMap <> (KeyType.class, Comparable [].class);
-            case LINHASH_MAP -> new LinHashMultiMap <> (KeyType.class, Set.class);
             //case BPTREE_MAP  -> new BpTreeMap <> (KeyType.class, Comparable [].class);
             default ->
                 null;
@@ -301,8 +300,6 @@ public class Table implements Serializable {
         out.println(STR."RA> \{name}.select (\{condition})");
 
         List<Comparable[]> rows = new ArrayList<>();
-
-        //  T O   B E   I M P L E M E N T E D
         var token = condition.split(" ");
         var colNo = col(token[0]);
         for (var t : tuples) {
