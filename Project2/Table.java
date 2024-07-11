@@ -404,7 +404,13 @@ public class Table implements Serializable {
         rows.addAll(tuples);
 
         // Create an index for the union operation
-        LinHashMap<KeyType, Comparable[]> unionIndex = create_index(rows, key[0]);
+        LinHashMap<KeyType, Comparable[]> unionIndex = new LinHashMap<>(KeyType.class, Comparable[].class);
+
+        // Add tuples from this table to the index
+        for (Comparable[] tuple : tuples) {
+            KeyType key = new KeyType(tuple);
+            unionIndex.put(key, tuple);
+        }
 
         // Add tuples from table2 that are not in the index
         for (Comparable[] tuple : table2.tuples) {
@@ -437,7 +443,13 @@ public class Table implements Serializable {
         List<Comparable[]> rows = new ArrayList<>();
 
         // Create an index for the table2 to check for existence
-        LinHashMap<KeyType, Comparable[]> table2Index = table2.create_index(table2.tuples, key[0]);
+        LinHashMap<KeyType, Comparable[]> table2Index = new LinHashMap<>(KeyType.class, Comparable[].class);
+
+        // Add tuples from table2 to the index
+        for (Comparable[] tuple : table2.tuples) {
+            KeyType key = new KeyType(tuple);
+            table2Index.put(key, tuple);
+        }
 
         // Add tuples from this table that are not in table2
         for (Comparable[] tuple : tuples) {
@@ -446,7 +458,6 @@ public class Table implements Serializable {
                 rows.add(tuple);
             }
         }
-
         return new Table(name + count++, attribute, domain, key, rows);
     } // minus
 

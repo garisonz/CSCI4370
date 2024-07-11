@@ -131,7 +131,7 @@ class MovieDB
         t_iselect.print ();
 
         //--------------------- union: movie UNION cinema
-/*
+
         out.println ();
         var t_union = movie.union (cinema);
         t_union.print ();
@@ -153,7 +153,7 @@ class MovieDB
         out.println ();
         var t_join2 = movie.join (cinema);
         t_join2.print ();
-*/
+
     } // main
 
 } // MovieDB
