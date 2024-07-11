@@ -173,14 +173,14 @@ public class LinHashMap <K, V>
      * @param key  the key to hash
      * @return  the location of the bucket chain containing the key-value pair
      */
-    private int h (Object key) { return key.hashCode () % mod1; }
+    private int h (Object key) { return Math.abs(key.hashCode ()) % mod1; }
 
     /********************************************************************************
      * Hash the key using the high resolution hash function.
      * @param key  the key to hash
      * @return  the location of the bucket chain containing the key-value pair
      */
-    private int h2 (Object key) { return key.hashCode () % mod2; }
+    private int h2 (Object key) { return Math.abs(key.hashCode ()) % mod2; }
 
     /********************************************************************************
      * Given the key, look up the value in the hash table.
@@ -259,34 +259,30 @@ public class LinHashMap <K, V>
     {
         out.println("split: bucket chain " + isplit);
 
-        // Save the current split index
-        int splitIndex = isplit;
-
         // Add a new bucket at the end of the hash table
         hTable.add(new Bucket());
 
-        // Collect all keys and values from the split bucket
-        Map<K, V> splitBucketKeys = new HashMap<>();
-        Bucket b = hTable.get(splitIndex);
+        // Collect all entries from the split bucket
+        Bucket b = hTable.get(isplit);
+        List<Map.Entry<K, V>> entriesToRehash = new ArrayList<>();
+
         while (b != null) {
             for (int i = 0; i < b.keys; i++) {
-                splitBucketKeys.put(b.key[i], b.value[i]);
+                entriesToRehash.add(new AbstractMap.SimpleEntry<>(b.key[i], b.value[i]));
             }
             b = b.next;
         }
 
-        // Clear the original split bucket
-        hTable.set(splitIndex, new Bucket());
+        // Clear the split bucket
+        hTable.set(isplit, new Bucket());
 
-        // Redistribute the collected keys and values
-        for (Map.Entry<K, V> entry : splitBucketKeys.entrySet()) {
-            K k = entry.getKey();
-            V v = entry.getValue();
-            int newIdx = h2(k);
+        // Redistribute entries
+        for (Map.Entry<K, V> entry : entriesToRehash) {
+            int newIdx = h2(entry.getKey());
 
             // Ensure the newIdx points to the correct bucket
-            if (newIdx < isplit) {
-                newIdx = h(k); // Remap the key to its correct bucket
+            if (newIdx < mod1 && newIdx >= isplit) {
+                newIdx = h(entry.getKey());
             }
 
             Bucket targetBucket = hTable.get(newIdx);
@@ -296,15 +292,18 @@ public class LinHashMap <K, V>
                 }
                 targetBucket = targetBucket.next;
             }
-            targetBucket.add(k, v);
+            targetBucket.add(entry.getKey(), entry.getValue());
         }
 
-        // Update split and mod values
-        isplit++;
-        if (isplit == mod1) {
-            mod1 = mod2;        // Move to the next phase
-            mod2 = 2 * mod1;    // Double the range of hash values
-            isplit = 0;         // Reset the split index
+        // Update split index and mod values
+        if (++isplit == mod1) {
+            isplit = 0;
+            mod1 = mod2;
+            mod2 *= 2;
+        }
+
+        if (DEBUG) {
+            out.println("split: new mod1 = " + mod1 + ", new mod2 = " + mod2 + ", isplit = " + isplit);
         }
     } // split
 

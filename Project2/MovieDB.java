@@ -87,12 +87,14 @@ class MovieDB
         studio.insert (studio2);
         studio.print ();
 
+        /*
         movie.save ();
         cinema.save ();
         movieStar.save ();
         starsIn.save ();
         movieExec.save ();
         studio.save ();
+        */
 
         movieStar.printIndex ();
 
@@ -123,12 +125,13 @@ class MovieDB
 
         //--------------------- indexed select: key
 
+        movieStar.printIndex();
         out.println ();
-        var t_iselect = movieStar.select (new KeyType ("Harrison_Ford"));
+        var t_iselect = movieStar.select (new KeyType("Harrison_Ford"));
         t_iselect.print ();
 
         //--------------------- union: movie UNION cinema
-
+/*
         out.println ();
         var t_union = movie.union (cinema);
         t_union.print ();
@@ -150,7 +153,7 @@ class MovieDB
         out.println ();
         var t_join2 = movie.join (cinema);
         t_join2.print ();
-
+*/
     } // main
 
 } // MovieDB

@@ -84,8 +84,6 @@ public class Table implements Serializable {
      * The map type to be used for indices. Change as needed.
      */
     private static final MapType mType = MapType.LINHASH_MAP;
-    private LinHashMap<KeyType, Comparable[]> uniqueIndex;
-    private LinHashMultiMap<KeyType, Comparable[]> nonUniqueIndex;
 
     /**
      * **********************************************************************************
@@ -106,61 +104,6 @@ public class Table implements Serializable {
         }; // switch
     } // makeMap
 
-    public void createIndex() {
-        out.println("Creating unique index on table " + name);
-        if (uniqueIndex == null) {
-            uniqueIndex = new LinHashMap<>(KeyType.class, Comparable[].class);
-            for (Comparable[] tuple : tuples) {
-                var keyVal = new Comparable[key.length];
-                var cols = match(key);
-                for (var j = 0; j < keyVal.length; j++) {
-                    keyVal[j] = tuple[cols[j]];
-                }
-                KeyType keyType = new KeyType(keyVal);
-                uniqueIndex.put(keyType, tuple);
-            }
-        } else {
-            out.println("Unique index already exists.");
-        }
-    }
-
-    public void createMindex() {
-        out.println("Creating non-unique index on table " + name);
-        if (nonUniqueIndex == null) {
-            nonUniqueIndex = new LinHashMultiMap<>(KeyType.class, Set.class);
-            for (Comparable[] tuple : tuples) {
-                var keyVal = new Comparable[key.length];
-                var cols = match(key);
-                for (var j = 0; j < keyVal.length; j++) {
-                    keyVal[j] = tuple[cols[j]];
-                }
-                KeyType keyType = new KeyType(keyVal);
-                nonUniqueIndex.putSingle(keyType, tuple);
-            }
-        } else {
-            out.println("Non-unique index already exists.");
-        }
-    }
-
-    public void dropIndex() {
-        out.println("Dropping unique index on table " + name);
-        if (uniqueIndex != null) {
-            uniqueIndex.clear();
-            uniqueIndex = null;
-        } else {
-            out.println("Unique index does not exist.");
-        }
-    }
-
-    public void dropMindex() {
-        out.println("Dropping non-unique index on table " + name);
-        if (nonUniqueIndex != null) {
-            nonUniqueIndex.clear();
-            nonUniqueIndex = null;
-        } else {
-            out.println("Non-unique index does not exist.");
-        }
-    }
 
     /**
      * **********************************************************************************
@@ -237,6 +180,55 @@ public class Table implements Serializable {
         out.println(STR."DDL> create table \{name} (\{attributes})");
     } // constructor
 
+    /**
+     * Create a unique index on the specified attribute.
+     *
+     * @param data The list of tuples to index.
+     * @param attribute The attribute to index on.
+     * @return The created index as a LinHashMap.
+     */
+    public LinHashMap<KeyType, Comparable[]> create_index(List<Comparable[]> data, String attribute) {
+
+        LinHashMap<KeyType, Comparable[]> index = new LinHashMap<>(KeyType.class, Comparable[].class);  // Initialize the LinHashMap
+        List<Comparable[]> duplicates = new ArrayList<>();  // To store duplicates
+
+        int colPos = col(attribute);  // Find the column position for the attribute
+
+        if (colPos == -1) {
+            throw new IllegalArgumentException("Attribute not found: " + attribute);
+        }
+
+        for (Comparable[] tuple : data) {
+            Comparable keyVal = tuple[colPos];
+            KeyType key = new KeyType(new Comparable[]{keyVal});
+
+            if (index.get(key) != null) {
+                duplicates.add(tuple);  // Add to duplicates if key already exists
+            } else {
+                index.put(key, tuple);  // Add to the index if key is unique
+            }
+        }
+
+        if (!duplicates.isEmpty()) {
+            System.out.println("Duplicate keys found: " + duplicates);
+            // Optionally remove duplicates from the data
+            data.removeAll(duplicates);
+        }
+
+        return index;  // Return the created index
+    }
+
+    /**
+     * Drop the primary index by clearing its contents and resetting it to null.
+     */
+    public void drop_index() {
+        if (index != null) {
+            index.clear();  // Clear the contents of the index
+            System.out.println("Index dropped successfully.");
+        } else {
+            System.out.println("No index to drop.");
+        }
+    }
     //----------------------------------------------------------------------------------
     // Public Methods
     //----------------------------------------------------------------------------------
@@ -381,7 +373,14 @@ public class Table implements Serializable {
 
         List<Comparable[]> rows = new ArrayList<>();
 
-        //  T O   B E   I M P L E M E N T E D  - Project 2
+        // Use the index to retrieve the tuple
+        Comparable[] tuple = index.get(keyVal);
+        if (tuple != null) {
+            rows.add(tuple);
+        } else {
+            System.out.println("No tuple found for key: " + keyVal);
+        }
+
         return new Table(name + count++, attribute, domain, key, rows);
     } // select
 
@@ -404,17 +403,15 @@ public class Table implements Serializable {
         // Add all tuples from this table
         rows.addAll(tuples);
 
-        // Add tuples from table2 that are not in this table
+        // Create an index for the union operation
+        LinHashMap<KeyType, Comparable[]> unionIndex = create_index(rows, key[0]);
+
+        // Add tuples from table2 that are not in the index
         for (Comparable[] tuple : table2.tuples) {
-            boolean isDuplicate = false;
-            for (Comparable[] existingTuple : rows) {
-                if (Arrays.equals(tuple, existingTuple)) {
-                    isDuplicate = true;
-                    break;
-                }
-            }
-            if (!isDuplicate) {
+            KeyType key = new KeyType(tuple);
+            if (unionIndex.get(key) == null) {
                 rows.add(tuple);
+                unionIndex.put(key, tuple);
             }
         }
 
@@ -439,16 +436,13 @@ public class Table implements Serializable {
 
         List<Comparable[]> rows = new ArrayList<>();
 
+        // Create an index for the table2 to check for existence
+        LinHashMap<KeyType, Comparable[]> table2Index = table2.create_index(table2.tuples, key[0]);
+
         // Add tuples from this table that are not in table2
         for (Comparable[] tuple : tuples) {
-            boolean isInTable2 = false;
-            for (Comparable[] tuple2 : table2.tuples) {
-                if (Arrays.equals(tuple, tuple2)) {
-                    isInTable2 = true;
-                    break;
-                }
-            }
-            if (!isInTable2) {
+            KeyType key = new KeyType(tuple);
+            if (table2Index.get(key) == null) {
                 rows.add(tuple);
             }
         }
@@ -618,9 +612,33 @@ public class Table implements Serializable {
      * @return a table with tuples satisfying the equality predicate
      */
     public Table i_join(String attributes1, String attributes2, Table table2) {
-        //  T O   B E   I M P L E M E N T E D  - Project 2
+        out.println(STR."RA> \{name}.join (\{attributes1}, \{attributes2}, \{table2.name})");
 
-        return null;
+        var t_attrs = attributes1.split(" ");
+        var u_attrs = attributes2.split(" ");
+        var rows = new ArrayList<Comparable[]>();
+
+        // Get the column positions for join attributes in both tables
+        int[] t_cols = match(t_attrs);
+        int[] u_cols = table2.match(u_attrs);
+
+        // Create new attribute array with disambiguated names
+        String[] newAttribute = disambiguateAttributes(this.attribute, table2.attribute);
+
+        // Create new domain array
+        Class[] newDomain = concat(domain, table2.domain);
+
+        // Create indices on the join attributes for both tables
+        LinHashMap<KeyType, Comparable[]> table1Index = create_index(tuples, t_attrs[0]);
+        LinHashMap<KeyType, Comparable[]> table2Index = table2.create_index(table2.tuples, u_attrs[0]);
+
+        // Perform the join operation
+        for (var key : table1Index.keySet()) {
+            if (table2Index.get(key) != null) {
+                rows.add(concat(table1Index.get(key), table2Index.get(key)));
+            }
+        }
+        return new Table(name + count++, newAttribute, newDomain, key, rows);
 
     } // i_join
 
@@ -810,6 +828,7 @@ public class Table implements Serializable {
      * **********************************************************************************
      * Save this table in a file.
      */
+    /*
     public void save() {
         try {
             var oos = new ObjectOutputStream(new FileOutputStream(DIR + name + EXT));
@@ -820,7 +839,7 @@ public class Table implements Serializable {
             ex.printStackTrace();
         } // try
     } // save
-
+    */
     //----------------------------------------------------------------------------------
     // Private Methods
     //----------------------------------------------------------------------------------
