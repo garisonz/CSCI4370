@@ -71,7 +71,7 @@ public class Table implements Serializable {
     /**
      * Index into tuples (maps key to tuple).
      */
-    private final Map<KeyType, Comparable[]> index;
+    private Map<KeyType, Comparable[]> index;
 
     /**
      * The supported map types.
@@ -930,7 +930,21 @@ public class Table implements Serializable {
      * the given domains
      */
     private boolean typeCheck(Comparable[] t) {
-        //  T O   B E   I M P L E M E N T E D 
+        // Check if the tuple has the correct number of elements
+        if (t.length != domain.length) {
+            out.println("Type check ERROR: Tuple length does not match domain length.");
+            return false;
+        }
+
+        // Check if each value in the tuple matches the expected domain type
+        for (int i = 0; i < t.length; i++) {
+            if (!domain[i].isInstance(t[i])) {
+                out.println(STR."Type check ERROR: Value \{t[i]} at position \{i} does not match expected type \{domain[i].getSimpleName()}.");
+                return false;
+            }
+        }
+
+        return true;
 
         return true;      // change once implemented
     } // typeCheck
