@@ -529,6 +529,23 @@ public class Table implements Serializable {
 
         return result;
     }
+    /**
+     * **********************************************************************************
+     * Join this table and table2 by performing an "equi-join". Same as above
+     * equi-join, but implemented using an INDEXED JOIN algorithm.
+     *
+     * @param attributes1 the attributes of this table to be compared (Foreign
+     * Key)
+     * @param attributes2 the attributes of table2 to be compared (Primary Key)
+     * @param table2 the rhs table in the join operation
+     * @return a table with tuples satisfying the equality predicate
+     */
+    public Table i_join(String attributes1, String attributes2, Table table2) {
+        //  T O   B E   I M P L E M E N T E D  - Project 2
+
+        return null;
+
+    } // i_join
 
     /**
      * **********************************************************************************
