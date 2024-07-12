@@ -16,7 +16,7 @@ Project Description:
 Austin Brock (Manager)
 Implementations
 •	Indexed Join
-•	
+•	Select
 
 Effectiveness
 •	2(Exceeds Expectations)
