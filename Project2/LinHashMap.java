@@ -48,7 +48,7 @@ public class LinHashMap <K, V>
     /********************************************************************************
      * The `Bucket` inner class defines buckets that are stored in the hash table.
      */
-    private class Bucket
+    private class Bucket implements Serializable
     {
         int    keys;                                                         // number of active keys
         K []   key;                                                          // array of keys
@@ -149,7 +149,6 @@ public class LinHashMap <K, V>
      * Return a set containing all the entries as pairs of keys and values.
      * @return  the set view of the map
      */
-    @Override
     public Set <Map.Entry <K, V>> entrySet ()
     {
         var enSet = new HashSet<Map.Entry<K, V>>();
@@ -188,7 +187,6 @@ public class LinHashMap <K, V>
      * @return  the value associated with the key
      */
     @SuppressWarnings("unchecked")
-    @Override
     public V get (Object key)
     {
         var i = h (key);
@@ -224,27 +222,35 @@ public class LinHashMap <K, V>
      * @param value  the value to insert
      * @return  the old/previous value, null if none
      */
-    @Override
-    public V put (K key, V value)
-    {
-        var i    = h (key);                                                  // hash to i-th bucket chain
-        var bh   = hTable.get (i);                                           // start with home bucket
-        var oldV = find (key, bh, false);                                    // find old value associated with key
-        out.println (STR."LinearHashMap.put: key \{key}, h() = \{i}, value = \{value}");
+    public V put(K key, V value) {
+        var i = h(key);                                                  // hash to i-th bucket chain
+        var bh = hTable.get(i);                                           // start with home bucket
+        var oldV = find(key, bh, false);                                    // find old value associated with key
+        out.println(STR."LinearHashMap.put: key \{key}, h() = \{i}, value = \{value}");
 
         kCount += 1;                                                         // increment the key count
-        var lf = loadFactor ();                                              // compute the load factor
-        if (DEBUG) out.println (STR."put: load factor = \{lf}");
-        if (lf > THRESHOLD) split ();                                        // split beyond THRESHOLD
-
+        var lf = loadFactor();                                              // compute the load factor
+        if (DEBUG) {
+            out.println(STR."put: load factor = \{lf}");
+        }
+        if (lf > THRESHOLD) {
+            split();                                        // split beyond THRESHOLD
+        }
         var b = bh;
         while (true) {
-            if (b.keys < SLOTS) { b.add (key, value); return oldV; }
-            if (b.next != null) b = b.next; else break;
+            if (b.keys < SLOTS) {
+                b.add(key, value);
+                return oldV;
+            }
+            if (b.next != null) {
+                b = b.next;
+            } else {
+                break;
+            }
         } // while
 
-        var bn = new Bucket ();
-        bn.add (key, value);
+        var bn = new Bucket();
+        bn.add(key, value);
         b.next = bn;                                                         // add new bucket at end of chain
         return oldV;
     } // put
@@ -259,51 +265,55 @@ public class LinHashMap <K, V>
     {
         out.println("split: bucket chain " + isplit);
 
-        // Add a new bucket at the end of the hash table
+        // Create a new empty bucket at the end of the hash table
         hTable.add(new Bucket());
 
-        // Collect all entries from the split bucket
-        Bucket b = hTable.get(isplit);
-        List<Map.Entry<K, V>> entriesToRehash = new ArrayList<>();
+        // Store the bucket that needs to be split into a temporary bucket
+        Bucket tempBucket = hTable.get(isplit);
+        hTable.set(isplit, new Bucket()); // Reset the current bucket in the hash table
 
-        while (b != null) {
-            for (int i = 0; i < b.keys; i++) {
-                entriesToRehash.add(new AbstractMap.SimpleEntry<>(b.key[i], b.value[i]));
+        // Temporary list to hold keys and values for redistribution
+        List<Map.Entry<K, V>> tempEntries = new ArrayList<>();
+
+        // Collect all key-value pairs from the current bucket and its overflow buckets
+        while (tempBucket != null) {
+            for (int i = 0; i < tempBucket.keys; i++) {
+                K key = tempBucket.key[i];
+                V value = tempBucket.value[i];
+                tempEntries.add(new AbstractMap.SimpleEntry<>(key, value));
             }
-            b = b.next;
+            tempBucket = tempBucket.next;
         }
 
-        // Clear the split bucket
-        hTable.set(isplit, new Bucket());
+        // Redistribute keys to new buckets according to the new hash function
+        for (Map.Entry<K, V> entry : tempEntries) {
+            K key = entry.getKey();
+            V value = entry.getValue();
+            int newIndex = h2(key);
 
-        // Redistribute entries
-        for (Map.Entry<K, V> entry : entriesToRehash) {
-            int newIdx = h2(entry.getKey());
-
-            // Ensure the newIdx points to the correct bucket
-            if (newIdx < mod1 && newIdx >= isplit) {
-                newIdx = h(entry.getKey());
+            // If the new index is less than the current modulus and greater or equal to the split index,
+            // it should be hashed using the original hash function
+            if (newIndex < mod1 && newIndex >= isplit) {
+                newIndex = h(key);
             }
 
-            Bucket targetBucket = hTable.get(newIdx);
+            Bucket targetBucket = hTable.get(newIndex);
             while (targetBucket.keys >= SLOTS) {
                 if (targetBucket.next == null) {
                     targetBucket.next = new Bucket();
                 }
                 targetBucket = targetBucket.next;
             }
-            targetBucket.add(entry.getKey(), entry.getValue());
+            targetBucket.add(key, value);
         }
 
-        // Update split index and mod values
-        if (++isplit == mod1) {
+        // Increment the split index
+        isplit++;
+        // If the split index reaches the current modulus, reset it and update the moduli
+        if (isplit == mod1) {
             isplit = 0;
             mod1 = mod2;
             mod2 *= 2;
-        }
-
-        if (DEBUG) {
-            out.println("split: new mod1 = " + mod1 + ", new mod2 = " + mod2 + ", isplit = " + isplit);
         }
     } // split
 
@@ -350,9 +360,15 @@ public class LinHashMap <K, V>
 
         if (RANDOMLY) {
             var rng = new Random ();
-            for (var i = 1; i <= totalKeys; i += 2) ht.put (rng.nextInt (2 * totalKeys), i * i);
+            for (var i = 1; i <= totalKeys; i += 2){ 
+                ht.put(rng.nextInt (2 * totalKeys), i * i);
+                ht.printT();
+                }
         } else {
-            for (var i = 1; i <= totalKeys; i += 2) ht.put (i, i * i);
+            for (var i = 1; i <= totalKeys; i += 2){
+                ht.put (i, i * i);
+                ht.printT();
+            }
         } // if
         System.out.print(ht.entrySet());
         ht.printT ();

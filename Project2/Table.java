@@ -839,7 +839,7 @@ public class Table implements Serializable {
      * **********************************************************************************
      * Save this table in a file.
      */
-    /*
+    
     public void save() {
         try {
             var oos = new ObjectOutputStream(new FileOutputStream(DIR + name + EXT));
@@ -850,7 +850,7 @@ public class Table implements Serializable {
             ex.printStackTrace();
         } // try
     } // save
-    */
+    
     //----------------------------------------------------------------------------------
     // Private Methods
     //----------------------------------------------------------------------------------

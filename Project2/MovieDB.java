@@ -5,6 +5,7 @@
  * @author   John Miller
  */
 
+import java.io.Serializable;
 import static java.lang.System.out;
 
 /*****************************************************************************************
@@ -12,7 +13,7 @@ import static java.lang.System.out;
  * databases.  See "Database Systems: The Complete Book", second edition, page 26 for more
  * information on the Movie Database schema.
  */
-class MovieDB
+class MovieDB implements Serializable
 {
     /*************************************************************************************
      * Main method for creating, populating and querying a Movie Database.
@@ -87,14 +88,14 @@ class MovieDB
         studio.insert (studio2);
         studio.print ();
 
-        /*
+        
         movie.save ();
         cinema.save ();
         movieStar.save ();
         starsIn.save ();
         movieExec.save ();
         studio.save ();
-        */
+        
 
         movieStar.printIndex ();
 
