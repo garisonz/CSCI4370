@@ -243,23 +243,27 @@ public class Table implements Serializable {
      * @return a table of projected tuples
      */
     public Table project(String attributes) {
-        out.println("RA> " + name + ".project (" + attributes + ")");
-        var attrs = attributes.split(" ");
-        var colDomain = extractDom(match(attrs), domain);
-        var newKey = (Arrays.asList(attrs).containsAll(Arrays.asList(key))) ? key : attrs;
+    out.println("RA> " + name + ".project (" + attributes + ")");
+    var attrs = attributes.split(" ");
+    var colDomain = extractDom(match(attrs), domain);
+    var newKey = (Arrays.asList(attrs).containsAll(Arrays.asList(key))) ? key : attrs;
 
-        List<Comparable[]> rows = new ArrayList<>();
+    Set<List<Comparable>> uniqueRows = new HashSet<>();
+    List<Comparable[]> rows = new ArrayList<>();
 
-        for (var tuple : tuples) {
-            var newTuple = new Comparable[attrs.length];
-            for (int i = 0; i < attrs.length; i++) {
-                newTuple[i] = tuple[col(attrs[i])];
-            }
-            rows.add(newTuple);
+    for (Comparable[] tuple : tuples) {
+        List<Comparable> projectedTuple = new ArrayList<>();
+        for (String attr : attrs) {
+            int colIndex = col(attr);
+            projectedTuple.add(tuple[colIndex]);
         }
+        if (uniqueRows.add(projectedTuple)) {
+            rows.add(projectedTuple.toArray(new Comparable[0]));
+        }
+    }
 
-        return new Table(name + count++, attrs, colDomain, newKey, rows);
-    } // project
+    return new Table(name + count++, attrs, colDomain, newKey, rows);
+}
 
     /**
      * **********************************************************************************
