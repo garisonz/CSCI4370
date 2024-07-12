@@ -937,8 +937,6 @@ public class Table implements Serializable {
         }
 
         return true;
-
-        return true;      // change once implemented
     } // typeCheck
 
     /**
