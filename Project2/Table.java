@@ -622,36 +622,28 @@ public class Table implements Serializable {
      * @param table2 the rhs table in the join operation
      * @return a table with tuples satisfying the equality predicate
      */
-    public Table i_join(String attributes1, String attributes2, Table table2) {
-        out.println(STR."RA> \{name}.join (\{attributes1}, \{attributes2}, \{table2.name})");
+    public Table i_join(String attributes1, String attributes2, Table table2)
+{
+    out.println(STR."RA> \{name}.i_join (\{attributes1}, \{attributes2}, \{table2.name})");
 
-        var t_attrs = attributes1.split(" ");
-        var u_attrs = attributes2.split(" ");
-        var rows = new ArrayList<Comparable[]>();
+    var t_attrs = attributes1.split(" ");
+    var u_attrs = attributes2.split(" ");
+    var rows = new ArrayList<Comparable[]>();
 
-        // Get the column positions for join attributes in both tables
-        int[] t_cols = match(t_attrs);
-        int[] u_cols = table2.match(u_attrs);
+    int[] t_cols = match(t_attrs);
+    int[] u_cols = table2.match(u_attrs);
 
-        // Create new attribute array with disambiguated names
-        String[] newAttribute = disambiguateAttributes(this.attribute, table2.attribute);
-
-        // Create new domain array
-        Class[] newDomain = concat(domain, table2.domain);
-
-        // Create indices on the join attributes for both tables
-        LinHashMap<KeyType, Comparable[]> table1Index = create_index(tuples, t_attrs[0]);
-        LinHashMap<KeyType, Comparable[]> table2Index = table2.create_index(table2.tuples, u_attrs[0]);
-
-        // Perform the join operation
-        for (var key : table1Index.keySet()) {
-            if (table2Index.get(key) != null) {
-                rows.add(concat(table1Index.get(key), table2Index.get(key)));
-            }
+    for (Comparable[] t : tuples) {
+        KeyType key = new KeyType(extract(t, t_attrs));
+        Comparable[] u = table2.index.get(key);
+        if (u != null) {
+            rows.add(concat(t, u));
         }
-        return new Table(name + count++, newAttribute, newDomain, key, rows);
+    }
 
-    } // i_join
+    return new Table(name + count++, concat(attribute, table2.attribute),
+                     concat(domain, table2.domain), key, rows);
+}
 
     /**
      * **********************************************************************************

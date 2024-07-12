@@ -155,6 +155,10 @@ class MovieDB implements Serializable
         var t_join2 = movie.join (cinema);
         t_join2.print ();
 
+        out.println();
+        var t_ijoin = movie.i_join("studioName","name", studio);
+        t_ijoin.print();
+
     } // main
 
 } // MovieDB
